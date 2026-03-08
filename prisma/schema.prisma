@@ -1,17 +1,41 @@
 generator client {
   provider = "prisma-client-js"
 }
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-enum Role { CUSTOMER SELLER ADMIN }
-enum OrderStatus {
-  RECEIVED UNDER_REVIEW CONFIRMED OUT_OF_STOCK
-  ASSIGNED OUT_FOR_DELIVERY DELIVERED CANCELLED
+
+enum Role {
+  CUSTOMER
+  SELLER
+  ADMIN
 }
-enum PaymentStatus { PENDING PAID FAILED REFUNDED }
-enum PayoutStatus { PENDING SENT }
+
+enum OrderStatus {
+  RECEIVED
+  UNDER_REVIEW
+  CONFIRMED
+  OUT_OF_STOCK
+  ASSIGNED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PayoutStatus {
+  PENDING
+  SENT
+}
+
 model User {
   id           String   @id @default(uuid())
   name         String
@@ -28,6 +52,7 @@ model User {
   orders        Order[]  @relation("CustomerOrders")
   notifications Notification[]
 }
+
 model Seller {
   id             String   @id @default(uuid())
   userId         String   @unique
@@ -43,6 +68,7 @@ model Seller {
   orderItems OrderItem[]
   payouts    Payout[]
 }
+
 model Category {
   id       String    @id @default(uuid())
   name     String    @unique
@@ -50,6 +76,7 @@ model Category {
   parentId String?
   products Product[]
 }
+
 model Product {
   id          String    @id @default(uuid())
   sellerId    String
@@ -68,6 +95,7 @@ model Product {
   updatedAt   DateTime  @updatedAt
   orderItems OrderItem[]
 }
+
 model Order {
   id              String      @id @default(uuid())
   customerId      String
@@ -87,6 +115,7 @@ model Order {
   statusLogs OrderStatusLog[]
   payouts    Payout[]
 }
+
 model OrderItem {
   id        String  @id @default(uuid())
   orderId   String
@@ -99,6 +128,7 @@ model OrderItem {
   unitPrice Float
   subtotal  Float
 }
+
 model OrderStatusLog {
   id          String       @id @default(uuid())
   orderId     String
@@ -109,6 +139,7 @@ model OrderStatusLog {
   note        String?
   createdAt   DateTime     @default(now())
 }
+
 model Payment {
   id         String        @id @default(uuid())
   orderId    String        @unique
@@ -119,6 +150,7 @@ model Payment {
   status     PaymentStatus @default(PENDING)
   createdAt  DateTime      @default(now())
 }
+
 model Delivery {
   id          String    @id @default(uuid())
   orderId     String    @unique
@@ -129,6 +161,7 @@ model Delivery {
   deliveredAt DateTime?
   status      String    @default("PENDING")
 }
+
 model Payout {
   id          String       @id @default(uuid())
   sellerId    String
@@ -143,6 +176,7 @@ model Payout {
   paidAt      DateTime?
   createdAt   DateTime     @default(now())
 }
+
 model Notification {
   id        String   @id @default(uuid())
   userId    String
