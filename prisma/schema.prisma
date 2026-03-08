@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+enum Role { CUSTOMER SELLER ADMIN }
+enum OrderStatus {
+  RECEIVED UNDER_REVIEW CONFIRMED OUT_OF_STOCK
+  ASSIGNED OUT_FOR_DELIVERY DELIVERED CANCELLED
+}
+enum PaymentStatus { PENDING PAID FAILED REFUNDED }
+enum PayoutStatus { PENDING SENT }
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String?  @unique
+  phone        String   @unique
+  passwordHash String
+  role         Role     @default(CUSTOMER)
+  isActive     Boolean  @default(true)
+  otpVerified  Boolean  @default(false)
+  fcmToken     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  seller        Seller?
+  orders        Order[]  @relation("CustomerOrders")
+  notifications Notification[]
+}
+model Seller {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id])
+  businessName   String
+  location       String
+  contactPhone   String
+  documentUrl    String?
+  isApproved     Boolean  @default(false)
+  commissionRate Float    @default(10.0)
+  createdAt      DateTime @default(now())
+  products   Product[]
+  orderItems OrderItem[]
+  payouts    Payout[]
+}
+model Category {
+  id       String    @id @default(uuid())
+  name     String    @unique
+  iconUrl  String?
+  parentId String?
+  products Product[]
+}
+model Product {
+  id          String    @id @default(uuid())
+  sellerId    String
+  seller      Seller    @relation(fields: [sellerId], references: [id])
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  name        String
+  description String
+  price       Float
+  stockQty    Int       @default(0)
+  images      String[]  @default([])
+  variants    Json?
+  isApproved  Boolean   @default(false)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  orderItems OrderItem[]
+}
+model Order {
+  id              String      @id @default(uuid())
+  customerId      String
+  customer        User        @relation("CustomerOrders", fields: [customerId], references: [id])
+  status          OrderStatus @default(RECEIVED)
+  deliveryAddress Json
+  deliveryFee     Float       @default(0)
+  totalAmount     Float
+  paymentMethod   String
+  paymentRef      String?
+  adminNote       String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  items      OrderItem[]
+  payment    Payment?
+  delivery   Delivery?
+  statusLogs OrderStatusLog[]
+  payouts    Payout[]
+}
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  sellerId  String
+  seller    Seller  @relation(fields: [sellerId], references: [id])
+  qty       Int
+  unitPrice Float
+  subtotal  Float
+}
+model OrderStatusLog {
+  id          String       @id @default(uuid())
+  orderId     String
+  order       Order        @relation(fields: [orderId], references: [id])
+  fromStatus  OrderStatus?
+  toStatus    OrderStatus
+  changedById String
+  note        String?
+  createdAt   DateTime     @default(now())
+}
+model Payment {
+  id         String        @id @default(uuid())
+  orderId    String        @unique
+  order      Order         @relation(fields: [orderId], references: [id])
+  amount     Float
+  method     String
+  gatewayRef String?
+  status     PaymentStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+}
+model Delivery {
+  id          String    @id @default(uuid())
+  orderId     String    @unique
+  order       Order     @relation(fields: [orderId], references: [id])
+  riderName   String?
+  riderPhone  String?
+  assignedAt  DateTime?
+  deliveredAt DateTime?
+  status      String    @default("PENDING")
+}
+model Payout {
+  id          String       @id @default(uuid())
+  sellerId    String
+  seller      Seller       @relation(fields: [sellerId], references: [id])
+  orderId     String
+  order       Order        @relation(fields: [orderId], references: [id])
+  grossAmount Float
+  commission  Float
+  netAmount   Float
+  status      PayoutStatus @default(PENDING)
+  reference   String?
+  paidAt      DateTime?
+  createdAt   DateTime     @default(now())
+}
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  title     String
+  body      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
